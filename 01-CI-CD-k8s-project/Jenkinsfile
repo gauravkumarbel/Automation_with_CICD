@@ -1,0 +1,65 @@
+pipeline {
+    agent any
+
+    environment {
+        DOCKER_IMAGE = "YOUR_DOCKERHUB_USERNAME/automation-with-cicd"
+        DOCKER_TAG = "${BUILD_NUMBER}"
+    }
+
+    stages {
+
+        stage('Checkout') {
+            steps {
+                checkout scm
+            }
+        }
+
+        stage('Build Docker Image') {
+            steps {
+                sh '''
+                    docker build -t ${DOCKER_IMAGE}:${DOCKER_TAG} .
+                    docker tag ${DOCKER_IMAGE}:${DOCKER_TAG} ${DOCKER_IMAGE}:latest
+                '''
+            }
+        }
+
+        stage('Push Docker Image') {
+            steps {
+                withCredentials([
+                    usernamePassword(
+                        credentialsId: 'dockerhub-credentials',
+                        usernameVariable: 'DOCKER_USER',
+                        passwordVariable: 'DOCKER_PASSWORD'
+                    )
+                ]) {
+                    sh '''
+                        echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USER" --password-stdin
+                        docker push ${DOCKER_IMAGE}:${DOCKER_TAG}
+                        docker push ${DOCKER_IMAGE}:latest
+                    '''
+                }
+            }
+        }
+
+        stage('Deploy to Kubernetes') {
+            steps {
+                sh '''
+                    sed -i "s|IMAGE_PLACEHOLDER|${DOCKER_IMAGE}:${DOCKER_TAG}|g" deploy.yaml
+                    kubectl apply -f deploy.yaml
+                    kubectl apply -f service.yaml
+                '''
+            }
+        }
+    }
+
+    post {
+        success {
+            echo 'Build and deployment successful!'
+        }
+
+        failure {
+            echo 'Build or deployment failed!'
+        }
+    }
+}
+

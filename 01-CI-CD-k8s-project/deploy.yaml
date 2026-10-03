@@ -1,0 +1,21 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: automation-with-cicd
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: automation-with-cicd
+  template:
+    metadata:
+      labels:
+        app: automation-with-cicd
+    spec:
+      containers:
+        - name: automation-with-cicd
+          image: IMAGE_PLACEHOLDER
+          ports:
+            - containerPort: 80
+          imagePullPolicy: Always
+
