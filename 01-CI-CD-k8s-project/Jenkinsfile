@@ -18,13 +18,13 @@ pipeline {
 
         stage('Run Container Test') {
             steps {
-                sh 'docker run -d --name test-nginx -p 8080:80 my-nginx:latest'
+                sh 'docker run -d --name test-nginx -p 8085:80 my-nginx:latest'
             }
         }
 
         stage('Test') {
             steps {
-                sh 'curl http://localhost:8080'
+                sh 'curl http://localhost:8085'
             }
         }
 
