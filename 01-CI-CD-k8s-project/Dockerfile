@@ -1,9 +1,4 @@
 FROM nginx:alpine
-
-COPY 01-CI-CD-k8s-project/index.html /usr/share/nginx/html/index.html
-
-
+COPY index.html /usr/share/nginx/index.html
 EXPOSE 80
-
-CMD ["nginx", "-g", "daemon off;"]
-
+CMD ["nginx", "-g", "daemon off:"]
