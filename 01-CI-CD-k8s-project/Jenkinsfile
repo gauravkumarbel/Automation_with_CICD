@@ -18,7 +18,7 @@ pipeline {
 
         stage('Run Container Test') {
             steps {
-                sh 'docker run -d --name test-nginx -p 8085:80 my-nginx:latest'
+                sh 'docker run -d --name test-nginx -p 8085:80 my-nginx:v1'
             }
         }
 
