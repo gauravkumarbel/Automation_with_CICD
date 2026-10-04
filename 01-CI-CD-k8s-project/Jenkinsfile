@@ -1,10 +1,6 @@
 pipeline {
-    agent any
 
-    environment {
-        DOCKER_IMAGE = "gaurav75/automation-with-cicd"
-        DOCKER_TAG = "${1}"
-    }
+    agent any
 
     stages {
 
@@ -16,50 +12,27 @@ pipeline {
 
         stage('Build Docker Image') {
             steps {
-                sh '''
-                    docker build -t ${DOCKER_IMAGE}:${DOCKER_TAG} .
-                    docker tag ${DOCKER_IMAGE}:${DOCKER_TAG} ${new_web}:latest
-                '''
+                sh 'docker build -t my-nginx:latest ./01-CI-CD-k8s-project'
             }
         }
 
-        stage('Push Docker Image') {
+        stage('Run Container Test') {
             steps {
-                withCredentials([
-                    usernamePassword(
-                        credentialsId: 'dockerhub-credentials',
-                        usernameVariable: 'gaurav75',
-                        passwordVariable: 'DOCKER_PASSWORD'
-                    )
-                ]) {
-                    sh '''
-                        echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USER" --password-stdin
-                        docker push ${DOCKER_IMAGE}:${DOCKER_TAG}
-                        docker push ${new_web}:latest
-                    '''
-                }
+                sh 'docker run -d --name test-nginx -p 8080:80 my-nginx:latest'
             }
         }
 
-        stage('Deploy to Kubernetes') {
+        stage('Test') {
             steps {
-                sh '''
-                    sed -i "s|IMAGE_PLACEHOLDER|${DOCKER_IMAGE}:${DOCKER_TAG}|g" deploy.yaml
-                    kubectl apply -f 01-CI-CD-k8s-project/deploy.yaml
-                    kubectl apply -f 01-CI-CD-k8s-project/service.yaml
-                '''
+                sh 'curl http://localhost:8080'
             }
         }
-    }
 
-    post {
-        success {
-            echo 'Build and deployment successful!'
-        }
-
-        failure {
-            echo 'Build or deployment failed!'
+        stage('Cleanup') {
+            steps {
+                sh 'docker stop test-nginx || true'
+                sh 'docker rm test-nginx || true'
+            }
         }
     }
 }
-
